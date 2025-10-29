@@ -385,9 +385,9 @@ class PopupFirebaseHandler {
             const tabs = workspaceData.tabs || [];
             const tabCount = tabs.length;
             
-            // Skip if count hasn't changed (prevents unnecessary syncs)
-            if (tabCount === lastTabCount) {
-              console.log('⏭️ Skipping sync - tab count unchanged');
+            // Only sync if there are tabs and count has actually changed
+            if (tabCount === 0 || tabCount === lastTabCount) {
+              console.log('⏭️ Skipping sync - no tabs or count unchanged');
               return;
             }
 
@@ -400,7 +400,14 @@ class PopupFirebaseHandler {
             
             syncDebounce = setTimeout(async () => {
               console.log(`🔄 Syncing ${tabs.length} tabs to window ${windowId} from ${workspaceData.updatedBy}`);
-              await this.syncTabsToWindow(tabs, windowId);
+              console.log(`Current userId: ${this.userId}, updatedBy: ${workspaceData.updatedBy}`);
+              
+              // Don't sync if the update came from us
+              if (workspaceData.updatedBy !== this.userId) {
+                await this.syncTabsToWindow(tabs, windowId);
+              } else {
+                console.log('⏭️ Skipping sync to our own window');
+              }
             }, 500);
 
           } catch (error) {
