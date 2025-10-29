@@ -14,6 +14,7 @@ class BackgroundFirebaseSync {
     };
     this.userId = this.generateUserId();
     this.activeWorkspaces = new Map(); // workspaceId -> {windowId, unsubscribe}
+    this.initializingWindows = new Set(); // Windows that are being initialized (don't sync during init)
   }
 
   generateUserId() {
@@ -36,12 +37,24 @@ class BackgroundFirebaseSync {
     try {
       if (!this.isInitialized) return;
 
+      // Skip if this window is currently being initialized (prevent duplicate tabs on join)
+      if (this.initializingWindows.has(tab.windowId)) {
+        console.log('⏭️ Skipping sync during window initialization');
+        return;
+      }
+
+      // Skip tabs without a URL (not fully loaded yet)
+      if (!tab.url || tab.url === 'chrome://newtab/' || tab.url === 'about:newtab') {
+        console.log('⏭️ Skipping tab without URL:', tab.title);
+        return;
+      }
+
       // Skip system/internal URLs
-      if (tab.url && (
-        tab.url.startsWith('chrome://') || 
-        tab.url.startsWith('chrome-extension://') ||
-        tab.url.startsWith('about:')
-      )) {
+      if (tab.url.startsWith('chrome://') || 
+          tab.url.startsWith('chrome-extension://') ||
+          tab.url.startsWith('about:')
+      ) {
+        console.log('⏭️ Skipping system URL:', tab.url);
         return;
       }
 
@@ -212,6 +225,16 @@ class BackgroundFirebaseSync {
     await chrome.storage.local.set({ activeWorkspaces: Array.from(this.activeWorkspaces.entries()) });
     
     console.log(`✅ Started workspace sync for ${workspaceId} in window ${windowId}`);
+  }
+
+  async markWindowInitializing(windowId) {
+    this.initializingWindows.add(windowId);
+    console.log(`🔧 Marking window ${windowId} as initializing`);
+  }
+
+  async unmarkWindowInitializing(windowId) {
+    this.initializingWindows.delete(windowId);
+    console.log(`✅ Window ${windowId} initialization complete`);
   }
 
   async stopWorkspaceSync(workspaceId) {

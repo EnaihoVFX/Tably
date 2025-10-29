@@ -1713,9 +1713,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             // Start background Firebase sync for this workspace
             await backgroundFirebaseSync.startWorkspaceSync(request.roomId, request.windowId);
             
-            // Start tab sync for this workspace window
-            await backgroundFirebaseSync.startWindowTabSync(request.roomId, request.windowId);
-            console.log(`🔄 Started tab sync for workspace window ${request.windowId}`);
+            // Note: Tab sync is already handled by the global tab listeners below
+            // They automatically detect workspace windows and sync tabs to Firebase
+            console.log(`🔄 Tab sync will be handled by global tab listeners`);
             
             // Inject collaboration indicator into the window
             try {
@@ -1750,6 +1750,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: false, error: error.message });
           }
         })();
+        return true;
+
+      case 'markWindowInitializing':
+        backgroundFirebaseSync.markWindowInitializing(request.windowId);
+        sendResponse({ success: true });
+        return true;
+
+      case 'unmarkWindowInitializing':
+        backgroundFirebaseSync.unmarkWindowInitializing(request.windowId);
+        sendResponse({ success: true });
         return true;
 
       case 'getCurrentWindowId':

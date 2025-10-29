@@ -312,6 +312,12 @@ class PopupFirebaseHandler {
         });
       }
 
+      // Mark window as initializing to prevent duplicate tab sync
+      await chrome.runtime.sendMessage({
+        action: 'markWindowInitializing',
+        windowId: window.id
+      });
+
       // Start listening to workspace changes
       this.startWorkspaceSync(roomId, window.id);
 
@@ -328,11 +334,22 @@ class PopupFirebaseHandler {
       try {
         const workspaceData = workspaceDocCheck.exists ? workspaceDocCheck.data() : null;
         if (workspaceData && workspaceData.tabs && workspaceData.tabs.length > 0) {
+          console.log(`📥 Loading ${workspaceData.tabs.length} existing tabs into workspace window...`);
           await this.syncTabsToWindow(workspaceData.tabs, window.id);
         }
       } catch (e) {
         // Document might not exist yet, that's okay
       }
+
+      // Wait a bit for tabs to finish loading, then unmark as initializing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      await chrome.runtime.sendMessage({
+        action: 'unmarkWindowInitializing',
+        windowId: window.id
+      });
+      
+      console.log('✅ Workspace window fully initialized');
 
       console.log(`✅ Joined collaboration workspace for room ${roomId} in window ${window.id}`);
       return { success: true, windowId: window.id };
