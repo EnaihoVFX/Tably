@@ -423,7 +423,12 @@ class PopupFirebaseHandler {
       const currentSyncIds = new Set(currentTabs.map(t => this.generateTabSyncId(t)));
       const syncedSyncIds = new Set(tabsData.map(t => t.syncId));
 
+      console.log(`📊 Syncing tabs: current=${currentTabs.length}, Firebase=${tabsData.length}`);
+      console.log('Current sync IDs:', Array.from(currentSyncIds));
+      console.log('Firebase sync IDs:', Array.from(syncedSyncIds));
+
       // Create tabs that don't exist
+      let createdCount = 0;
       for (const tabData of tabsData) {
         if (!currentSyncIds.has(tabData.syncId)) {
           // Check if URL is valid and not sensitive
@@ -432,6 +437,7 @@ class PopupFirebaseHandler {
               !tabData.url.startsWith('chrome-extension://') &&
               !tabData.url.startsWith('about:')) {
             try {
+              console.log(`➕ Creating new tab: ${tabData.url}`);
               await chrome.tabs.create({
                 windowId: windowId,
                 url: tabData.url,
@@ -439,12 +445,15 @@ class PopupFirebaseHandler {
                 pinned: tabData.pinned || false,
                 index: tabData.index !== undefined ? tabData.index : -1
               });
+              createdCount++;
             } catch (error) {
               console.error(`Failed to create tab: ${tabData.url}`, error);
             }
           }
         }
       }
+      
+      console.log(`✅ Created ${createdCount} new tabs`);
 
       // Remove tabs that were deleted (but keep pinned tabs)
       for (const currentTab of currentTabs) {
