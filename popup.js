@@ -41,11 +41,13 @@ class PopupManager {
     this.isInitialized = false;
     this.sessions = [];
     this.tabs = [];
+    this.tabGroups = [];
     this.selectedTabs = new Set();
     this.currentView = 'grid'; // 'grid' or 'list'
     this.searchQuery = '';
     this.currentTabView = 'dashboard'; // 'dashboard' or 'sessions'
-    this.currentWindowId = null; // Current window ID
+    this.currentWindowId = null;
+    this.currentGroupId = null; // null when showing all tabs/groups, groupId when showing group content // Current window ID
     this.currentWorkspaceId = null; // Current workspace ID if window is part of one
     this.availableWindows = []; // List of all windows
     this.workspaceInfo = null; // Workspace info (participants, tabs, etc.)
