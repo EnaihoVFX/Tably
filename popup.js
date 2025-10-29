@@ -1277,11 +1277,22 @@ class PopupManager {
       this.tabs = tabs || [];
       console.log(`✅ Loaded ${this.tabs.length} tabs from window ${this.currentWindowId || 'all'}`);
       
+      // Load tab groups
+      try {
+        const groups = await chrome.tabGroups.query(queryOptions);
+        this.tabGroups = groups || [];
+        console.log(`✅ Loaded ${this.tabGroups.length} tab groups`);
+      } catch (error) {
+        console.error('⚠️ Error loading tab groups:', error);
+        this.tabGroups = [];
+      }
+      
       this.renderTabs();
     } catch (error) {
       console.error('⚠️ Error loading tabs:', error);
       // Don't show error to user, just use empty tabs
       this.tabs = [];
+      this.tabGroups = [];
       this.renderTabs();
     }
   }
@@ -1312,10 +1323,35 @@ class PopupManager {
 
   renderTabs() {
     const container = document.getElementById('tabsContainer');
-    const filteredTabs = this.getFilteredTabs();
+    const backBtn = document.getElementById('backBtn');
     const tabCountEl = document.getElementById('tabCount');
 
-    if (filteredTabs.length === 0) {
+    // Show/hide back button based on whether we're in a group view
+    if (backBtn) {
+      if (this.currentGroupId !== null) {
+        backBtn.style.display = 'block';
+        backBtn.addEventListener('click', () => {
+          this.currentGroupId = null;
+          this.renderTabs();
+        });
+      } else {
+        backBtn.style.display = 'none';
+      }
+    }
+
+    // If showing a specific group
+    if (this.currentGroupId !== null) {
+      this.renderGroupTabs(container, tabCountEl);
+      return;
+    }
+
+    // Show all tabs and groups
+    const filteredTabs = this.getFilteredTabs();
+    const ungroupedTabs = filteredTabs.filter(tab => 
+      tab.groupId === chrome.tabGroups.TAB_GROUP_ID_NONE || !tab.groupId
+    );
+
+    if (ungroupedTabs.length === 0 && this.tabGroups.length === 0) {
       container.innerHTML = `
         <div class="empty-state" style="grid-column: 1 / -1;">
           <div class="empty-state-icon">🔍</div>
@@ -1333,7 +1369,10 @@ class PopupManager {
       return;
     }
 
-    let countText = `${filteredTabs.length} tab${filteredTabs.length !== 1 ? 's' : ''}`;
+    let countText = `${ungroupedTabs.length} ungrouped tab${ungroupedTabs.length !== 1 ? 's' : ''}`;
+    if (this.tabGroups.length > 0) {
+      countText += ` • ${this.tabGroups.length} group${this.tabGroups.length !== 1 ? 's' : ''}`;
+    }
     if (this.currentWindowId) {
       countText += ` in Window ${this.currentWindowId}`;
     }
@@ -1345,7 +1384,8 @@ class PopupManager {
     }
     tabCountEl.textContent = countText;
 
-    container.innerHTML = filteredTabs.map(tab => {
+    // Render ungrouped tabs
+    let html = ungroupedTabs.map(tab => {
       const isSelected = this.selectedTabs.has(tab.id);
       const viewClass = this.currentView;
       
@@ -1361,11 +1401,6 @@ class PopupManager {
       }
       
       const domain = tab.url ? new URL(tab.url).hostname.replace('www.', '') : '';
-      
-      // Get group info if available
-      const groupInfo = tab.groupId !== chrome.tabGroups.TAB_GROUP_ID_NONE 
-        ? `<div class="tab-group-indicator">Grouped</div>` 
-        : '';
 
       return `
         <div class="tab-item ${viewClass} ${isSelected ? 'selected' : ''}" 
@@ -1376,11 +1411,55 @@ class PopupManager {
           <div class="tab-content">
             <div class="tab-title">${this.escapeHtml(tab.title || 'Untitled')}</div>
             <div class="tab-url">${this.escapeHtml(domain)}</div>
-            ${groupInfo}
           </div>
         </div>
       `;
     }).join('');
+
+    // Render groups
+    html += this.tabGroups.map(group => {
+      const viewClass = this.currentView;
+      const tabsInGroup = this.tabs.filter(tab => tab.groupId === group.id);
+      const groupColors = {
+        blue: '#4299e1',
+        cyan: '#38b2ac',
+        green: '#48bb78',
+        yellow: '#ed8936',
+        orange: '#ed8936',
+        pink: '#ed64a6',
+        purple: '#9f7aea',
+        red: '#f56565',
+        grey: '#a0aec0',
+        gray: '#a0aec0'
+      };
+      
+      const bgColor = groupColors[group.color] || groupColors.grey;
+
+      return `
+        <div class="tab-item group-item ${viewClass}" 
+             data-group-id="${group.id}"
+             data-action="expand-group"
+             title="Click to view ${tabsInGroup.length} tab${tabsInGroup.length !== 1 ? 's' : ''} in this group">
+          <div class="tab-icon group-icon ${viewClass}" style="background: ${bgColor} !important; border-color: ${bgColor} !important;">📁</div>
+          <div class="tab-content">
+            <div class="tab-title">${this.escapeHtml(group.title || 'Untitled Group')}</div>
+            <div class="tab-url">${tabsInGroup.length} tab${tabsInGroup.length !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    container.innerHTML = html;
+
+    // Attach event listeners to group items
+    container.querySelectorAll('[data-action="expand-group"]').forEach(item => {
+      const groupId = parseInt(item.dataset.groupId);
+      
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.expandGroup(groupId);
+      });
+    });
 
     // Attach event listeners to tab items
     container.querySelectorAll('[data-action="select-tab"]').forEach(item => {
@@ -1420,6 +1499,94 @@ class PopupManager {
 
     // Update group selected button state
     document.getElementById('groupSelectedBtn').disabled = this.selectedTabs.size < 2;
+  }
+
+  expandGroup(groupId) {
+    this.currentGroupId = groupId;
+    this.renderTabs();
+  }
+
+  renderGroupTabs(container, tabCountEl) {
+    const group = this.tabGroups.find(g => g.id === this.currentGroupId);
+    if (!group) {
+      this.currentGroupId = null;
+      this.renderTabs();
+      return;
+    }
+
+    const tabsInGroup = this.tabs.filter(tab => tab.groupId === this.currentGroupId);
+    const filteredTabs = !this.searchQuery 
+      ? tabsInGroup 
+      : tabsInGroup.filter(tab => {
+          const title = (tab.title || '').toLowerCase();
+          const url = (tab.url || '').toLowerCase();
+          return title.includes(this.searchQuery) || url.includes(this.searchQuery);
+        });
+
+    tabCountEl.textContent = `${filteredTabs.length} tab${filteredTabs.length !== 1 ? 's' : ''} in "${group.title || 'Untitled Group'}"`;
+
+    container.innerHTML = filteredTabs.map(tab => {
+      const isSelected = this.selectedTabs.has(tab.id);
+      const viewClass = this.currentView;
+      
+      // Create a better fallback icon based on domain
+      let favIcon = tab.favIconUrl;
+      if (!favIcon || favIcon.startsWith('chrome://') || favIcon.startsWith('chrome-extension://')) {
+        const domain = tab.url ? new URL(tab.url).hostname.replace('www.', '') : '';
+        const iconColor = this.getDomainColor(domain);
+        const iconLetter = domain.charAt(0).toUpperCase() || '?';
+        const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" fill="${iconColor}" rx="4"/><text x="16" y="22" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">${iconLetter}</text></svg>`;
+        favIcon = `data:image/svg+xml,${encodeURIComponent(svgContent)}`;
+      }
+      
+      const domain = tab.url ? new URL(tab.url).hostname.replace('www.', '') : '';
+
+      return `
+        <div class="tab-item ${viewClass} ${isSelected ? 'selected' : ''}" 
+             data-tab-id="${tab.id}"
+             data-action="select-tab"
+             title="Click to select, double-click to switch">
+          <img src="${favIcon}" class="tab-icon ${viewClass}" alt="" data-favicon>
+          <div class="tab-content">
+            <div class="tab-title">${this.escapeHtml(tab.title || 'Untitled')}</div>
+            <div class="tab-url">${this.escapeHtml(domain)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach event listeners
+    container.querySelectorAll('[data-action="select-tab"]').forEach(item => {
+      const tabId = parseInt(item.dataset.tabId);
+      
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.toggleTabSelection(tabId);
+      });
+      
+      item.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        this.switchToTab(tabId);
+      });
+    });
+
+    // Handle image load errors
+    container.querySelectorAll('[data-favicon]').forEach(img => {
+      img.addEventListener('error', () => {
+        const tabItem = img.closest('[data-tab-id]');
+        if (tabItem) {
+          const tabId = parseInt(tabItem.dataset.tabId);
+          const tab = this.tabs.find(t => t.id === tabId);
+          if (tab) {
+            const domain = tab.url ? new URL(tab.url).hostname.replace('www.', '') : '';
+            const iconColor = this.getDomainColor(domain);
+            const iconLetter = domain.charAt(0).toUpperCase() || '?';
+            const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" fill="${iconColor}" rx="4"/><text x="16" y="22" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">${iconLetter}</text></svg>`;
+            img.src = `data:image/svg+xml,${encodeURIComponent(svgContent)}`;
+          }
+        }
+      });
+    });
   }
 
   toggleTabSelection(tabId) {
