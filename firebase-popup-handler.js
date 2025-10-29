@@ -361,6 +361,9 @@ class PopupFirebaseHandler {
 
   async startWorkspaceSync(roomId, windowId) {
     try {
+      let lastTabCount = 0;
+      let syncDebounce = null;
+      
       // Listen to workspace state changes
       this.db.collection('syncRooms')
         .doc(roomId)
@@ -375,11 +378,31 @@ class PopupFirebaseHandler {
             
             // Skip if this update came from us (prevent loops)
             if (workspaceData.updatedBy === this.userId) {
+              console.log('⏭️ Skipping sync from own update');
               return;
             }
 
-            // Sync tabs to this window
-            await this.syncTabsToWindow(workspaceData.tabs || [], windowId);
+            const tabs = workspaceData.tabs || [];
+            const tabCount = tabs.length;
+            
+            // Skip if count hasn't changed (prevents unnecessary syncs)
+            if (tabCount === lastTabCount) {
+              console.log('⏭️ Skipping sync - tab count unchanged');
+              return;
+            }
+
+            lastTabCount = tabCount;
+
+            // Debounce rapid changes
+            if (syncDebounce) {
+              clearTimeout(syncDebounce);
+            }
+            
+            syncDebounce = setTimeout(async () => {
+              console.log(`🔄 Syncing ${tabs.length} tabs to window ${windowId} from ${workspaceData.updatedBy}`);
+              await this.syncTabsToWindow(tabs, windowId);
+            }, 500);
+
           } catch (error) {
             console.error('Error processing workspace snapshot:', error);
           }
@@ -451,7 +474,11 @@ class PopupFirebaseHandler {
   }
 
   generateTabSyncId(tab) {
-    return `${tab.url || 'newtab'}_${tab.index}`;
+    // Use a more stable ID that doesn't depend on index (which can change)
+    // Base it on URL and title instead
+    const baseUrl = tab.url || 'newtab';
+    const title = (tab.title || '').substring(0, 20);
+    return `${baseUrl}_${title}_${tab.pinned ? 'pinned' : ''}`;
   }
 
   async syncTabToFirebase(roomId, tab, action) {
@@ -546,7 +573,7 @@ class PopupFirebaseHandler {
 
       if (!tab) return;
 
-      const syncId = this.generateTabSyncId(tab);
+      const syncId = `${tab.url || 'newtab'}_${(tab.title || '').substring(0, 20)}_${tab.pinned ? 'pinned' : ''}`;
 
       const workspaceRef = this.db.collection('syncRooms').doc(roomId).collection('workspace').doc('state');
       const workspaceDoc = await workspaceRef.get();

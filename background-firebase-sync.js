@@ -58,8 +58,10 @@ class BackgroundFirebaseSync {
         return;
       }
 
-      // Generate sync ID
-      const syncId = `${tab.url || 'newtab'}_${tab.index}`;
+      // Generate sync ID - use stable ID based on URL and title
+      const baseUrl = tab.url || 'newtab';
+      const title = (tab.title || '').substring(0, 20);
+      const syncId = `${baseUrl}_${title}_${tab.pinned ? 'pinned' : ''}`;
 
       // Create safe tab data
       const safeTabData = {
