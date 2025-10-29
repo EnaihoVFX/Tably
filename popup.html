@@ -9,8 +9,8 @@
     }
     
     body {
-      width: 450px;
-      max-height: 700px;
+      width: 500px;
+      max-height: 750px;
       padding: 0;
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -23,20 +23,23 @@
     
     .header {
       text-align: center;
-      padding: 15px;
-      background: rgba(0, 0, 0, 0.2);
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
     
     .header h1 {
       margin: 0;
-      font-size: 18px;
-      font-weight: 600;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
     }
     
     .header p {
-      margin: 5px 0 0 0;
-      font-size: 11px;
-      opacity: 0.8;
+      margin: 6px 0 0 0;
+      font-size: 12px;
+      opacity: 0.85;
     }
     
     .tabs-container {
@@ -49,13 +52,22 @@
     
     .search-bar {
       width: 100%;
-      padding: 10px;
+      padding: 12px 14px;
       margin-bottom: 15px;
-      border: none;
-      border-radius: 6px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
       background: rgba(255, 255, 255, 0.95);
       color: #333;
-      font-size: 13px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .search-bar:focus {
+      outline: none;
+      border-color: rgba(102, 126, 234, 0.8);
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+      background: white;
     }
     
     .search-bar::placeholder {
@@ -109,22 +121,44 @@
     }
     
     .tab-item {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 6px;
-      padding: 10px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 12px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .tab-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
     
     .tab-item:hover {
-      background: rgba(255, 255, 255, 0.25);
-      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.22);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    .tab-item:hover::before {
+      opacity: 1;
     }
     
     .tab-item.selected {
-      background: rgba(76, 175, 80, 0.5);
-      border: 2px solid rgba(76, 175, 80, 0.8);
+      background: rgba(76, 175, 80, 0.4);
+      border: 2px solid rgba(76, 175, 80, 1);
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
     }
     
     .tab-item.grid {
@@ -217,22 +251,44 @@
     }
     
     button {
-      padding: 8px 12px;
+      padding: 10px 16px;
       border: none;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.18);
       color: white;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       flex: 1;
-      min-width: 80px;
+      min-width: 90px;
+      letter-spacing: 0.3px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    button::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+    
+    button:hover::before {
+      width: 300px;
+      height: 300px;
     }
     
     button:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.28);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
     
     button:active {
@@ -240,33 +296,44 @@
     }
     
     button:disabled {
-      opacity: 0.5;
+      opacity: 0.4;
       cursor: not-allowed;
       transform: none;
     }
     
+    button span {
+      position: relative;
+      z-index: 1;
+    }
+    
     .primary {
-      background: rgba(76, 175, 80, 0.8);
+      background: linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(56, 142, 60, 0.9) 100%);
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
     }
     
     .primary:hover {
-      background: rgba(76, 175, 80, 1);
+      background: linear-gradient(135deg, rgba(76, 175, 80, 1) 0%, rgba(56, 142, 60, 1) 100%);
+      box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4);
     }
     
     .secondary {
-      background: rgba(255, 152, 0, 0.8);
+      background: linear-gradient(135deg, rgba(255, 152, 0, 0.85) 0%, rgba(245, 124, 0, 0.85) 100%);
+      box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
     }
     
     .secondary:hover {
-      background: rgba(255, 152, 0, 1);
+      background: linear-gradient(135deg, rgba(255, 152, 0, 1) 0%, rgba(245, 124, 0, 1) 100%);
+      box-shadow: 0 4px 16px rgba(255, 152, 0, 0.4);
     }
     
     .danger {
-      background: rgba(244, 67, 54, 0.8);
+      background: linear-gradient(135deg, rgba(244, 67, 54, 0.85) 0%, rgba(211, 47, 47, 0.85) 100%);
+      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
     }
     
     .danger:hover {
-      background: rgba(244, 67, 54, 1);
+      background: linear-gradient(135deg, rgba(244, 67, 54, 1) 0%, rgba(211, 47, 47, 1) 100%);
+      box-shadow: 0 4px 16px rgba(244, 67, 54, 0.4);
     }
     
     .section {
@@ -334,34 +401,82 @@
     
     .status {
       text-align: center;
-      font-size: 12px;
+      font-size: 13px;
       margin-top: 10px;
-      padding: 8px;
+      padding: 12px;
       background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      animation: slideDown 0.3s ease-out;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
     
     .success {
-      background: rgba(76, 175, 80, 0.3);
+      background: linear-gradient(135deg, rgba(76, 175, 80, 0.4) 0%, rgba(56, 142, 60, 0.4) 100%);
+      border-color: rgba(76, 175, 80, 0.6);
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
     }
     
     .error {
-      background: rgba(244, 67, 54, 0.3);
+      background: linear-gradient(135deg, rgba(244, 67, 54, 0.4) 0%, rgba(211, 47, 47, 0.4) 100%);
+      border-color: rgba(244, 67, 54, 0.6);
+      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.2);
     }
     
     .loading {
-      background: rgba(33, 150, 243, 0.3);
+      background: linear-gradient(135deg, rgba(33, 150, 243, 0.4) 0%, rgba(25, 118, 210, 0.4) 100%);
+      border-color: rgba(33, 150, 243, 0.6);
+      animation: pulseLoading 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulseLoading {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
     }
     
     .empty-state {
       text-align: center;
       padding: 40px 20px;
       opacity: 0.7;
+      animation: fadeIn 0.5s ease-in;
     }
     
     .empty-state-icon {
       font-size: 48px;
       margin-bottom: 10px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 0.7;
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
     }
     
     .tab-count {
@@ -514,12 +629,25 @@
     }
 
     .workspace-banner {
-      background: rgba(76, 175, 80, 0.3);
-      border: 1px solid rgba(76, 175, 80, 0.5);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 15px;
-      backdrop-filter: blur(10px);
+      background: linear-gradient(135deg, rgba(76, 175, 80, 0.35) 0%, rgba(56, 142, 60, 0.35) 100%);
+      border: 2px solid rgba(76, 175, 80, 0.6);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 18px;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 4px 16px rgba(76, 175, 80, 0.2);
+      animation: slideIn 0.4s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .workspace-header {
