@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page for Smart Tab Organizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .link-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .link-card a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .link-card a:hover {
+            text-decoration: underline;
+        }
+        .instructions {
+            background: rgba(76, 175, 80, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Smart Tab Organizer Test Page</h1>
+        
+        <div class="instructions">
+            <h3>📋 Testing Instructions:</h3>
+            <ol>
+                <li><strong>First:</strong> Click "🤖 Initialize AI Model" in the extension popup</li>
+                <li>Wait for Gemini Nano AI model to download (may take a few minutes)</li>
+                <li>Open multiple tabs with different types of content using the links below</li>
+                <li>Click the Smart Tab Organizer extension icon (🧠) in your toolbar</li>
+                <li>Click "🧠 Organize Tabs with AI"</li>
+                <li>Watch as AI intelligently analyzes and groups your tabs with smart names!</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>🔗 Test Links - Open These in New Tabs:</h3>
+            <div class="links">
+                <div class="link-card">
+                    <a href="https://gmail.com" target="_blank">📧 Gmail</a>
+                </div>
+                <div class="link-card">
+                    <a href="https://slack.com" target="_blank">💬 Slack</a>
+                </div>
+                <div class="link-card">
+                    <a href="https://amazon.com" target="_blank">🛒 Amazon</a>
+                </div>
+                <div class="link-card">
+                    <a href="https://facebook.com" target="_blank">📘 Facebook</a>
+                </div>
+                <div class="link-card">
+                    <a href="https://youtube.com" target="_blank">📺 YouTube</a>
+                </div>
+                <div class="link-card">
+                    <a href="https://wikipedia.org" target="_blank">📚 Wikipedia</a>
+                </div>
+                <div class="link-card">
+                    <a href="https://github.com" target="_blank">💻 GitHub</a>
+                </div>
+                <div class="link-card">
+                    <a href="https://netflix.com" target="_blank">🎬 Netflix</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 Expected AI Results:</h3>
+            <ul>
+                <li><strong>Smart Group Names:</strong> AI will create descriptive names like "Work Communication", "Shopping Research", "Social Media", "Learning Resources"</li>
+                <li><strong>Intelligent Categorization:</strong> AI analyzes content, domains, and context to group related tabs</li>
+                <li><strong>Color Coding:</strong> Each group gets appropriate colors (Work=Blue, Social=Purple, Shopping=Orange, etc.)</li>
+                <li><strong>Context Awareness:</strong> AI understands the purpose and workflow of your tabs</li>
+                <li><strong>Descriptive Summaries:</strong> Each group gets a helpful description of its contents</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Troubleshooting:</h3>
+            <ul>
+                <li>Make sure the extension is enabled in chrome://extensions/</li>
+                <li>Check the browser console (F12) for any error messages</li>
+                <li>Try refreshing the extension if it's not working</li>
+                <li>The extension will work with fallback categorization even without AI APIs</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        console.log('Test page loaded for Smart Tab Organizer');
+        
+        // Add some content for the content script to analyze
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Test page DOM loaded');
+            
+            // Simulate some dynamic content
+            setTimeout(() => {
+                const dynamicContent = document.createElement('div');
+                dynamicContent.innerHTML = '<p>This is dynamic content for testing the content script.</p>';
+                document.body.appendChild(dynamicContent);
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

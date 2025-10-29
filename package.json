@@ -1,0 +1,41 @@
+{
+  "name": "smart-tab-organizer",
+  "version": "1.0.0",
+  "description": "AI-powered tab organization and session management for Chrome",
+  "main": "background.js",
+  "scripts": {
+    "test": "echo \"No tests specified\" && exit 0",
+    "build": "echo \"Extension is ready to load in Chrome\"",
+    "lint": "echo \"No linting configured\""
+  },
+  "keywords": [
+    "chrome-extension",
+    "ai",
+    "tab-management",
+    "productivity",
+    "gemini-nano",
+    "chrome-ai-apis"
+  ],
+  "author": "Smart Tab Organizer Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/smart-tab-organizer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/smart-tab-organizer/issues"
+  },
+  "homepage": "https://github.com/your-username/smart-tab-organizer#readme",
+  "engines": {
+    "chrome": ">=88.0.0"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
+
+
+
+
+
+
+
