@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access to sync rooms
+    match /syncRooms/{roomId} {
+      allow read, write: if true; // For testing - restrict in production!
+      
+      match /workspace/{document=**} {
+        allow read, write: if true; // For testing - restrict in production!
+      }
+    }
+    
+    // Allow test collection for connection testing
+    match /_test/{document=**} {
+      allow read, write: if true; // For testing
+    }
+  }
+}
+

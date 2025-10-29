@@ -61,6 +61,16 @@
     .search-bar::placeholder {
       color: #999;
     }
+
+    #windowSelector {
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    #windowSelector option {
+      background: white;
+      color: #333;
+    }
     
     .view-toggle {
       display: flex;
@@ -176,6 +186,7 @@
       max-height: 2.6em;
       display: -webkit-box;
       -webkit-line-clamp: 2;
+      line-clamp: 2;
       -webkit-box-orient: vertical;
     }
     
@@ -402,6 +413,149 @@
       flex: 1;
       overflow: hidden;
     }
+
+    .dialog {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+    }
+
+    .dialog-content {
+      background: rgba(102, 126, 234, 0.95);
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .dialog-content h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .dialog-content p {
+      margin: 0 0 15px 0;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .share-link-input,
+    .import-url-input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: none;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.95);
+      color: #333;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .share-link-input:focus,
+    .import-url-input:focus {
+      outline: 2px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .dialog-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .dialog-actions button {
+      min-width: 80px;
+    }
+
+    .sync-status {
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .sync-status.connected {
+      background: rgba(76, 175, 80, 0.3);
+    }
+
+    .firebase-config-input,
+    .room-input {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      font-size: 12px;
+      font-family: monospace;
+    }
+
+    #syncControls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #syncControls button {
+      width: 100%;
+    }
+
+    .workspace-banner {
+      background: rgba(76, 175, 80, 0.3);
+      border: 1px solid rgba(76, 175, 80, 0.5);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+      backdrop-filter: blur(10px);
+    }
+
+    .workspace-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .workspace-header strong {
+      font-size: 14px;
+    }
+
+    .workspace-id {
+      font-size: 11px;
+      opacity: 0.8;
+      font-family: monospace;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .workspace-details {
+      display: flex;
+      gap: 15px;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .workspace-participants,
+    .workspace-tabs-count {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
   </style>
 </head>
 <body>
@@ -417,6 +571,15 @@
 
   <div id="dashboardView" class="tab-view active">
     <div class="tabs-container">
+      <!-- Workspace Banner -->
+      <div id="workspaceBanner" class="workspace-banner" style="display: none;">
+        <div id="workspaceInfo"></div>
+      </div>
+      
+      <select id="windowSelector" class="search-bar" style="display: none; margin-bottom: 10px;">
+        <option>Loading windows...</option>
+      </select>
+      
       <input type="text" id="searchBar" class="search-bar" placeholder="🔍 Search tabs...">
       
       <div class="view-toggle">
@@ -457,6 +620,22 @@
           <div class="status">Loading sessions...</div>
         </div>
       </div>
+
+      <div class="section">
+        <h3>📥 Import Shared Session</h3>
+        <button id="importBtn" class="secondary">Import from URL</button>
+      </div>
+
+      <div class="section">
+        <h3>🔥 Real-Time Sync</h3>
+        <div id="syncStatus" class="sync-status">Connecting...</div>
+        <div id="syncControls" style="display: none; margin-top: 10px;">
+          <input type="text" id="workspaceIdInput" placeholder="Workspace ID (e.g., ABC123)" class="room-input">
+          <button id="createWorkspaceBtn" class="primary">Create Workspace</button>
+          <button id="joinWorkspaceBtn" class="primary">Join Workspace</button>
+          <button id="leaveWorkspaceBtn" class="danger">Leave Workspace</button>
+        </div>
+      </div>
     </div>
     
     <div class="action-bar">
@@ -464,8 +643,37 @@
     </div>
   </div>
 
+  <!-- Share Dialog -->
+  <div id="shareDialog" class="dialog" style="display: none;">
+    <div class="dialog-content">
+      <h3>🔗 Share Session</h3>
+      <p>Copy this link to share your session:</p>
+      <input type="text" id="shareLinkInput" readonly class="share-link-input">
+      <div class="dialog-actions">
+        <button id="shareCloseBtn" class="primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Dialog -->
+  <div id="importDialog" class="dialog" style="display: none;">
+    <div class="dialog-content">
+      <h3>📥 Import Shared Session</h3>
+      <p>Paste the shared session URL:</p>
+      <input type="text" id="importUrlInput" placeholder="tabsession://..." class="import-url-input">
+      <div class="dialog-actions">
+        <button id="importConfirmBtn" class="primary">Import</button>
+        <button id="importCancelBtn" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <div id="status" class="status" style="display: none;"></div>
 
+  <!-- Firebase SDK (local files) -->
+  <script src="firebase-app.js"></script>
+  <script src="firebase-firestore.js"></script>
+  <script src="firebase-popup-handler.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
