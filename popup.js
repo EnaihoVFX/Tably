@@ -530,15 +530,17 @@ class PopupManager {
         if (workspaceInfo) {
           workspaceInfo.innerHTML = `
             <div class="workspace-header">
-              <strong>🔗 ${this.workspaceInfo.sessionName || this.currentWorkspaceId}</strong>
-              <span class="workspace-id">ID: ${this.currentWorkspaceId}</span>
+              <strong>Collaboration Workspace</strong>
+              <span class="workspace-id">${this.currentWorkspaceId}</span>
             </div>
             <div class="workspace-details">
-              <div class="workspace-participants">
-                👥 ${this.workspaceInfo.participants.length} participant${this.workspaceInfo.participants.length !== 1 ? 's' : ''}
+              <div class="workspace-details-item">
+                <span>👥</span>
+                <span>${this.workspaceInfo.participants.length} Active</span>
               </div>
-              <div class="workspace-tabs-count">
-                📑 ${this.workspaceInfo.tabs.length} synced tab${this.workspaceInfo.tabs.length !== 1 ? 's' : ''}
+              <div class="workspace-details-item">
+                <span>📑</span>
+                <span>${this.workspaceInfo.tabs.length} Tabs</span>
               </div>
             </div>
           `;
