@@ -491,10 +491,10 @@ class PopupFirebaseHandler {
 
   generateTabSyncId(tab) {
     // Use a more stable ID that doesn't depend on index (which can change)
-    // Base it on URL and title instead
+    // Base it on URL only - title can change and cause mismatches
     const baseUrl = tab.url || 'newtab';
-    const title = (tab.title || '').substring(0, 20);
-    return `${baseUrl}_${title}_${tab.pinned ? 'pinned' : ''}`;
+    // Use just URL for sync ID to keep it stable
+    return baseUrl;
   }
 
   async syncTabToFirebase(roomId, tab, action) {
@@ -589,7 +589,7 @@ class PopupFirebaseHandler {
 
       if (!tab) return;
 
-      const syncId = `${tab.url || 'newtab'}_${(tab.title || '').substring(0, 20)}_${tab.pinned ? 'pinned' : ''}`;
+      const syncId = tab.url || 'newtab';
 
       const workspaceRef = this.db.collection('syncRooms').doc(roomId).collection('workspace').doc('state');
       const workspaceDoc = await workspaceRef.get();
