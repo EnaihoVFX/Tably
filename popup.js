@@ -1239,11 +1239,17 @@ class PopupManager {
         // Refresh workspace status
         this.checkWorkspaceStatus().catch(() => {});
       });
-    } else {
+    } else if (view === 'sessions') {
       document.getElementById('sessionsView').classList.add('active');
       const searchBarSessions = document.getElementById('searchBarSessions');
       if (searchBarSessions) searchBarSessions.value = '';
       this.renderSessions();
+    } else if (view === 'game') {
+      document.getElementById('gameView').classList.add('active');
+      // Initialize game if not already initialized
+      if (!this.gameManager) {
+        this.gameManager = new TabNinjaGame(document.getElementById('gameCanvas'));
+      }
     }
   }
 
@@ -2010,6 +2016,310 @@ class PopupManager {
         status.style.display = 'none';
       }, 3000);
     }
+  }
+}
+
+// Tab Ninja Game - Fruit Ninja style game with tabs
+class TabNinjaGame {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.isRunning = false;
+    this.score = 0;
+    this.missed = 0;
+    this.tabs = [];
+    this.particles = [];
+    this.trail = [];
+    this.animationId = null;
+    
+    // Set canvas size
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    
+    // Game settings
+    this.spawnRate = 60; // frames between spawns
+    this.frameCount = 0;
+    this.maxMissed = 5;
+    
+    this.setupEventListeners();
+  }
+  
+  resize() {
+    const rect = this.canvas.getBoundingClientRect();
+    this.canvas.width = rect.width * devicePixelRatio;
+    this.canvas.height = rect.height * devicePixelRatio;
+    this.ctx.scale(devicePixelRatio, devicePixelRatio);
+    this.canvas.style.width = rect.width + 'px';
+    this.canvas.style.height = rect.height + 'px';
+  }
+  
+  setupEventListeners() {
+    const startBtn = document.getElementById('gameStartBtn');
+    const pauseBtn = document.getElementById('gamePauseBtn');
+    const restartBtn = document.getElementById('gameRestartBtn');
+    const quitBtn = document.getElementById('gameQuitBtn');
+    
+    if (startBtn) {
+      startBtn.addEventListener('click', () => this.start());
+    }
+    
+    if (pauseBtn) {
+      pauseBtn.addEventListener('click', () => this.pause());
+    }
+    
+    if (restartBtn) {
+      restartBtn.addEventListener('click', () => this.restart());
+    }
+    
+    if (quitBtn) {
+      quitBtn.addEventListener('click', () => this.quit());
+    }
+    
+    // Mouse/touch events for swiping
+    this.canvas.addEventListener('mousemove', (e) => this.handleSwipe(e));
+    this.canvas.addEventListener('touchmove', (e) => this.handleSwipe(e.touches[0]));
+    this.canvas.addEventListener('mouseleave', () => this.trail = []);
+  }
+  
+  start() {
+    this.isRunning = true;
+    this.score = 0;
+    this.missed = 0;
+    this.tabs = [];
+    this.frameCount = 0;
+    document.getElementById('gameStartBtn').style.display = 'none';
+    document.getElementById('gamePauseBtn').style.display = 'block';
+    document.getElementById('gameOverScreen').style.display = 'none';
+    this.updateUI();
+    this.gameLoop();
+  }
+  
+  pause() {
+    this.isRunning = false;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+    }
+    document.getElementById('gameStartBtn').style.display = 'block';
+    document.getElementById('gameStartBtn').querySelector('span').textContent = 'Resume';
+    document.getElementById('gamePauseBtn').style.display = 'none';
+  }
+  
+  restart() {
+    this.start();
+  }
+  
+  quit() {
+    this.isRunning = false;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+    }
+    document.getElementById('gameOverScreen').style.display = 'none';
+    document.getElementById('gameStartBtn').style.display = 'block';
+    document.getElementById('gameStartBtn').querySelector('span').textContent = 'Start Game';
+    document.getElementById('gamePauseBtn').style.display = 'none';
+    this.tabs = [];
+    this.trail = [];
+    this.clearCanvas();
+  }
+  
+  gameLoop() {
+    if (!this.isRunning) return;
+    
+    this.clearCanvas();
+    
+    // Spawn tabs
+    this.frameCount++;
+    if (this.frameCount % this.spawnRate === 0) {
+      this.spawnTab();
+    }
+    
+    // Update and draw tabs
+    this.updateTabs();
+    
+    // Draw trail
+    this.drawTrail();
+    
+    // Update UI
+    this.updateUI();
+    
+    this.animationId = requestAnimationFrame(() => this.gameLoop());
+  }
+  
+  spawnTab() {
+    const isBomb = Math.random() < 0.15; // 15% chance of bomb
+    const x = Math.random() * this.canvas.width;
+    const titles = ['Google', 'YouTube', 'GitHub', 'Reddit', 'Twitter', 'Facebook'];
+    const title = isBomb ? '💣 BOMB!' : titles[Math.floor(Math.random() * titles.length)];
+    
+    const tab = {
+      x: x,
+      y: this.canvas.height + 20,
+      vx: (Math.random() - 0.5) * 2,
+      vy: -4 - Math.random() * 2,
+      width: 60,
+      height: 60,
+      title: title,
+      isBomb: isBomb,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.2
+    };
+    
+    this.tabs.push(tab);
+  }
+  
+  updateTabs() {
+    for (let i = this.tabs.length - 1; i >= 0; i--) {
+      const tab = this.tabs[i];
+      
+      // Update position
+      tab.x += tab.vx;
+      tab.y += tab.vy;
+      tab.rotation += tab.rotationSpeed;
+      
+      // Apply gravity
+      tab.vy += 0.1;
+      
+      // Remove off-screen tabs
+      if (tab.y < -tab.height) {
+        if (!tab.isBomb) {
+          this.missed++;
+        }
+        this.tabs.splice(i, 1);
+        continue;
+      }
+      
+      // Draw tab
+      this.drawTab(tab);
+      
+      // Check collision with trail
+      if (this.checkCollisionWithTrail(tab)) {
+        if (tab.isBomb) {
+          this.gameOver();
+          return;
+        }
+        
+        // Create particles
+        this.createParticles(tab);
+        
+        // Remove tab
+        this.tabs.splice(i, 1);
+        this.score++;
+      }
+    }
+    
+    // Check game over condition
+    if (this.missed >= this.maxMissed) {
+      this.gameOver();
+    }
+  }
+  
+  drawTab(tab) {
+    this.ctx.save();
+    this.ctx.translate(tab.x + tab.width/2, tab.y + tab.height/2);
+    this.ctx.rotate(tab.rotation);
+    
+    // Draw background
+    const gradient = this.ctx.createLinearGradient(0, -tab.height/2, 0, tab.height/2);
+    if (tab.isBomb) {
+      gradient.addColorStop(0, '#ff0000');
+      gradient.addColorStop(1, '#cc0000');
+    } else {
+      gradient.addColorStop(0, '#667eea');
+      gradient.addColorStop(1, '#764ba2');
+    }
+    
+    this.ctx.fillStyle = gradient;
+    this.ctx.fillRect(-tab.width/2, -tab.height/2, tab.width, tab.height);
+    
+    // Draw border
+    this.ctx.strokeStyle = '#2d3748';
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeRect(-tab.width/2, -tab.height/2, tab.width, tab.height);
+    
+    // Draw text
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = 'bold 10px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText(tab.title, 0, 0);
+    
+    this.ctx.restore();
+  }
+  
+  handleSwipe(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    this.trail.push({ x, y, life: 10 });
+    
+    // Limit trail length
+    if (this.trail.length > 20) {
+      this.trail.shift();
+    }
+  }
+  
+  drawTrail() {
+    for (let i = 0; i < this.trail.length; i++) {
+      const point = this.trail[i];
+      point.life--;
+      
+      if (point.life <= 0) {
+        this.trail.splice(i, 1);
+        i--;
+        continue;
+      }
+      
+      this.ctx.fillStyle = `rgba(255, 0, 0, ${point.life / 10})`;
+      this.ctx.beginPath();
+      this.ctx.arc(point.x, point.y, 15, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+  }
+  
+  checkCollisionWithTrail(tab) {
+    for (const point of this.trail) {
+      const dx = point.x - (tab.x + tab.width/2);
+      const dy = point.y - (tab.y + tab.height/2);
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance < 30) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  createParticles(tab) {
+    for (let i = 0; i < 10; i++) {
+      this.particles.push({
+        x: tab.x + tab.width/2,
+        y: tab.y + tab.height/2,
+        vx: (Math.random() - 0.5) * 10,
+        vy: (Math.random() - 0.5) * 10,
+        life: 20
+      });
+    }
+  }
+  
+  gameOver() {
+    this.isRunning = false;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+    }
+    
+    document.getElementById('finalScore').textContent = this.score;
+    document.getElementById('gameOverScreen').style.display = 'flex';
+    document.getElementById('gamePauseBtn').style.display = 'none';
+  }
+  
+  updateUI() {
+    document.getElementById('scoreValue').textContent = this.score;
+    document.getElementById('missedValue').textContent = this.missed;
+  }
+  
+  clearCanvas() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
 }
 

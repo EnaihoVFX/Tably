@@ -1028,6 +1028,91 @@
       justify-content: center;
       font-size: 18px;
     }
+    
+    /* Game View Styles */
+    .game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: linear-gradient(180deg, #87ceeb 0%, #98fb98 100%);
+    }
+    
+    #gameCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+    }
+    
+    .game-ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    
+    .game-score,
+    .game-missed {
+      background: rgba(255, 255, 255, 0.9);
+      border: 3px solid #2d3748;
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-weight: 800;
+      font-size: 13px;
+      box-shadow: 0 3px 0 #1a202c, 0 5px 10px rgba(0, 0, 0, 0.15);
+      pointer-events: auto;
+    }
+    
+    .game-start-btn,
+    .game-start-btn {
+      pointer-events: auto;
+      margin-top: 8px;
+    }
+    
+    .game-over-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      color: white;
+    }
+    
+    .game-over-screen h2 {
+      font-size: 36px;
+      font-weight: 900;
+      margin-bottom: 20px;
+      text-shadow: 3px 3px 0 #1a202c;
+      color: #ffffff;
+    }
+    
+    .final-score {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 30px;
+      color: #ffeaa7;
+    }
+    
+    .trail {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: rgba(255, 0, 0, 0.5);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 50;
+    }
   </style>
 </head>
 <body>
@@ -1042,6 +1127,7 @@
   <div class="nav-tabs">
     <button class="nav-tab active" data-view="dashboard">Dashboard</button>
     <button class="nav-tab" data-view="sessions">Sessions</button>
+    <button class="nav-tab" data-view="game">🎮 Game</button>
   </div>
 
   <div id="dashboardView" class="tab-view active">
@@ -1081,6 +1167,31 @@
       <button id="organizeBtn" class="primary"><span>Organize</span></button>
       <button id="groupSelectedBtn" class="secondary" disabled><span>Group</span></button>
       <button id="ungroupBtn"><span>Ungroup</span></button>
+    </div>
+  </div>
+
+  <div id="sessionsView" class="tab-view">
+    <div class="tabs-container">
+      <div class="search-wrapper">
+        <span class="search-icon"></span>
+        <input type="text" id="searchBarSessions" class="search-bar" placeholder="Search sessions...">
+      </div>
+
+  <div id="gameView" class="tab-view">
+    <div id="gameContainer" class="game-container">
+      <canvas id="gameCanvas"></canvas>
+      <div id="gameUI" class="game-ui">
+        <div class="game-score">Score: <span id="scoreValue">0</span></div>
+        <div class="game-missed">Missed: <span id="missedValue">0</span></div>
+        <button id="gameStartBtn" class="primary game-start-btn"><span>Start Game</span></button>
+        <button id="gamePauseBtn" class="secondary" style="display: none;"><span>Pause</span></button>
+      </div>
+      <div id="gameOverScreen" class="game-over-screen" style="display: none;">
+        <h2>Game Over!</h2>
+        <div class="final-score">Final Score: <span id="finalScore">0</span></div>
+        <button id="gameRestartBtn" class="primary"><span>Play Again</span></button>
+        <button id="gameQuitBtn" class="secondary"><span>Quit</span></button>
+      </div>
     </div>
   </div>
 
