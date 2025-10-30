@@ -698,6 +698,14 @@ class PopupManager {
         });
       }
 
+      // Floating game button
+      const gameFabBtn = document.getElementById('gameFabBtn');
+      if (gameFabBtn) {
+        gameFabBtn.addEventListener('click', () => {
+          this.switchTabView('game');
+        });
+      }
+
     // Search bar
     const searchBar = document.getElementById('searchBar');
     const searchBarSessions = document.getElementById('searchBarSessions');
@@ -2030,6 +2038,12 @@ class TabNinjaGame {
     this.tabs = [];
     this.particles = [];
     this.trail = [];
+    this.slashes = [];
+    this.lastSpawnX = null;
+    this.minSpawnSeparation = 120; // pixels separation between spawns
+    this.isSwiping = false;
+    this.currentSwipe = [];
+    this.swipeMinDistance = 30;
     this.animationId = null;
     
     // Set canvas size
@@ -2037,7 +2051,7 @@ class TabNinjaGame {
     window.addEventListener('resize', () => this.resize());
     
     // Game settings
-    this.spawnRate = 60; // frames between spawns
+    this.spawnRate = 85; // frames between spawns (more spread out)
     this.frameCount = 0;
     this.maxMissed = 5;
     
@@ -2045,12 +2059,13 @@ class TabNinjaGame {
   }
   
   resize() {
-    const rect = this.canvas.getBoundingClientRect();
-    this.canvas.width = rect.width * devicePixelRatio;
-    this.canvas.height = rect.height * devicePixelRatio;
-    this.ctx.scale(devicePixelRatio, devicePixelRatio);
-    this.canvas.style.width = rect.width + 'px';
-    this.canvas.style.height = rect.height + 'px';
+    const container = this.canvas.parentElement;
+    const width = container.offsetWidth || 420;
+    const height = container.offsetHeight || 550;
+    
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.ctx.scale(1, 1);
   }
   
   setupEventListeners() {
@@ -2075,10 +2090,15 @@ class TabNinjaGame {
       quitBtn.addEventListener('click', () => this.quit());
     }
     
-    // Mouse/touch events for swiping
+    // Mouse/touch events for explicit swipe gestures
+    this.canvas.addEventListener('mousedown', (e) => this.startSwipe(e));
+    window.addEventListener('mouseup', () => this.endSwipe());
     this.canvas.addEventListener('mousemove', (e) => this.handleSwipe(e));
+    this.canvas.addEventListener('mouseleave', () => this.endSwipe());
+    this.canvas.addEventListener('touchstart', (e) => this.startSwipe(e.touches[0]));
+    this.canvas.addEventListener('touchend', () => this.endSwipe());
+    this.canvas.addEventListener('touchcancel', () => this.endSwipe());
     this.canvas.addEventListener('touchmove', (e) => this.handleSwipe(e.touches[0]));
-    this.canvas.addEventListener('mouseleave', () => this.trail = []);
   }
   
   start() {
@@ -2087,6 +2107,8 @@ class TabNinjaGame {
     this.missed = 0;
     this.tabs = [];
     this.frameCount = 0;
+    this.trail = [];
+    this.slashes = [];
     document.getElementById('gameStartBtn').style.display = 'none';
     document.getElementById('gamePauseBtn').style.display = 'block';
     document.getElementById('gameOverScreen').style.display = 'none';
@@ -2119,7 +2141,14 @@ class TabNinjaGame {
     document.getElementById('gamePauseBtn').style.display = 'none';
     this.tabs = [];
     this.trail = [];
+    this.slashes = [];
     this.clearCanvas();
+    // Navigate back to dashboard
+    try {
+      if (typeof popupManager !== 'undefined' && popupManager && popupManager.switchTabView) {
+        popupManager.switchTabView('dashboard');
+      }
+    } catch (e) {}
   }
   
   gameLoop() {
@@ -2136,7 +2165,7 @@ class TabNinjaGame {
     // Update and draw tabs
     this.updateTabs();
     
-    // Draw trail
+    // Draw slash visuals and current swipe
     this.drawTrail();
     
     // Update UI
@@ -2147,21 +2176,32 @@ class TabNinjaGame {
   
   spawnTab() {
     const isBomb = Math.random() < 0.15; // 15% chance of bomb
-    const x = Math.random() * this.canvas.width;
+    let x = Math.random() * (this.canvas.width - 60) + 30;
+    // Enforce minimum horizontal separation from previous spawn
+    if (this.lastSpawnX !== null && Math.abs(x - this.lastSpawnX) < this.minSpawnSeparation) {
+      if (x < this.canvas.width / 2) {
+        x = Math.min(this.canvas.width - 30, this.lastSpawnX + this.minSpawnSeparation);
+      } else {
+        x = Math.max(30, this.lastSpawnX - this.minSpawnSeparation);
+      }
+    }
+    this.lastSpawnX = x;
     const titles = ['Google', 'YouTube', 'GitHub', 'Reddit', 'Twitter', 'Facebook'];
     const title = isBomb ? '💣 BOMB!' : titles[Math.floor(Math.random() * titles.length)];
-    
+    // Higher and more random arcs
+    const initialVy = -7 - Math.random() * 5; // -7 to -12
+    const initialVx = (Math.random() - 0.5) * 3.5; // wider spread horizontally
     const tab = {
       x: x,
       y: this.canvas.height + 20,
-      vx: (Math.random() - 0.5) * 2,
-      vy: -4 - Math.random() * 2,
+      vx: initialVx,
+      vy: initialVy,
       width: 60,
       height: 60,
       title: title,
       isBomb: isBomb,
       rotation: Math.random() * Math.PI * 2,
-      rotationSpeed: (Math.random() - 0.5) * 0.2
+      rotationSpeed: (Math.random() - 0.5) * 0.25
     };
     
     this.tabs.push(tab);
@@ -2191,20 +2231,7 @@ class TabNinjaGame {
       // Draw tab
       this.drawTab(tab);
       
-      // Check collision with trail
-      if (this.checkCollisionWithTrail(tab)) {
-        if (tab.isBomb) {
-          this.gameOver();
-          return;
-        }
-        
-        // Create particles
-        this.createParticles(tab);
-        
-        // Remove tab
-        this.tabs.splice(i, 1);
-        this.score++;
-      }
+      // Collisions handled at end of swipe via full path
     }
     
     // Check game over condition
@@ -2217,77 +2244,187 @@ class TabNinjaGame {
     this.ctx.save();
     this.ctx.translate(tab.x + tab.width/2, tab.y + tab.height/2);
     this.ctx.rotate(tab.rotation);
-    
-    // Draw background
-    const gradient = this.ctx.createLinearGradient(0, -tab.height/2, 0, tab.height/2);
+
+    const w = tab.width, h = tab.height;
+    const rx = 10; // rounded corner radius
+
+    // Shadow
+    this.ctx.save();
+    this.ctx.translate(2, 3);
+    this.ctx.fillStyle = 'rgba(26,32,44,0.25)';
+    this.drawRoundedRect(-w/2, -h/2, w, h, rx, true, false);
+    this.ctx.restore();
+
+    // Background gradient matching theme
+    const gradient = this.ctx.createLinearGradient(0, -h/2, 0, h/2);
     if (tab.isBomb) {
-      gradient.addColorStop(0, '#ff0000');
-      gradient.addColorStop(1, '#cc0000');
+      gradient.addColorStop(0, '#2d3748');
+      gradient.addColorStop(1, '#1a202c');
     } else {
-      gradient.addColorStop(0, '#667eea');
-      gradient.addColorStop(1, '#764ba2');
+      gradient.addColorStop(0, '#4a5568');
+      gradient.addColorStop(1, '#2d3748');
     }
-    
     this.ctx.fillStyle = gradient;
-    this.ctx.fillRect(-tab.width/2, -tab.height/2, tab.width, tab.height);
-    
-    // Draw border
-    this.ctx.strokeStyle = '#2d3748';
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(-tab.width/2, -tab.height/2, tab.width, tab.height);
-    
-    // Draw text
+    this.drawRoundedRect(-w/2, -h/2, w, h, rx, true, false);
+
+    // Border
+    this.ctx.strokeStyle = '#1a202c';
+    this.ctx.lineWidth = 3;
+    this.drawRoundedRect(-w/2, -h/2, w, h, rx, false, true);
+
+    // Title
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.font = 'bold 10px Arial';
+    this.ctx.font = 'bold 11px Arial';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     this.ctx.fillText(tab.title, 0, 0);
-    
+
     this.ctx.restore();
   }
+
+  drawRoundedRect(x, y, w, h, r, fill, stroke) {
+    const ctx = this.ctx;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+  }
   
+  startSwipe(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    this.isSwiping = true;
+    this.currentSwipe = [{ x, y }];
+  }
+
   handleSwipe(e) {
+    if (!this.isSwiping) return;
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    this.trail.push({ x, y, life: 10 });
+    const now = performance.now();
+    this.currentSwipe.push({ x, y, t: now });
     
     // Limit trail length
-    if (this.trail.length > 20) {
-      this.trail.shift();
+    if (this.currentSwipe.length > 40) this.currentSwipe.shift();
+  }
+
+  endSwipe() {
+    if (!this.isSwiping) return;
+    this.isSwiping = false;
+    // Validate swipe length
+    if (this.currentSwipe.length > 1 && this.computePathLength(this.currentSwipe) >= this.swipeMinDistance) {
+      // Keep a fading slash for visuals
+      this.slashes.push({ points: [...this.currentSwipe], life: 18, maxLife: 18 });
+      // Slice tabs crossed by the swipe path
+      this.sliceTabsWithPath(this.currentSwipe);
     }
+    this.currentSwipe = [];
   }
   
   drawTrail() {
-    for (let i = 0; i < this.trail.length; i++) {
-      const point = this.trail[i];
-      point.life--;
-      
-      if (point.life <= 0) {
-        this.trail.splice(i, 1);
-        i--;
-        continue;
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = 'lighter';
+    // Render fading slashes (paths)
+    for (let i = 0; i < this.slashes.length; i++) {
+      const s = this.slashes[i];
+      s.life -= 1;
+      if (s.life <= 0) { this.slashes.splice(i, 1); i--; continue; }
+      const t = s.life / s.maxLife;
+      const lw = 10 * t + 2;
+      for (let j = 1; j < s.points.length; j++) {
+        const p1 = s.points[j - 1];
+        const p2 = s.points[j];
+        const grad = this.ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+        grad.addColorStop(0, `rgba(255,255,255,${0.35 * t})`);
+        grad.addColorStop(0.5, `rgba(255,0,0,${0.5 * t})`);
+        grad.addColorStop(1, `rgba(255,255,255,${0.35 * t})`);
+        this.ctx.strokeStyle = grad;
+        this.ctx.lineWidth = lw;
+        this.ctx.lineCap = 'round';
+        this.ctx.beginPath();
+        this.ctx.moveTo(p1.x, p1.y);
+        this.ctx.lineTo(p2.x, p2.y);
+        this.ctx.stroke();
       }
-      
-      this.ctx.fillStyle = `rgba(255, 0, 0, ${point.life / 10})`;
-      this.ctx.beginPath();
-      this.ctx.arc(point.x, point.y, 15, 0, Math.PI * 2);
-      this.ctx.fill();
     }
+    // Render current swipe path (non-fading)
+    if (this.isSwiping && this.currentSwipe.length > 1) {
+      this.ctx.lineWidth = 12;
+      this.ctx.lineCap = 'round';
+      for (let j = 1; j < this.currentSwipe.length; j++) {
+        const p1 = this.currentSwipe[j - 1];
+        const p2 = this.currentSwipe[j];
+        const grad = this.ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+        grad.addColorStop(0, 'rgba(255,255,255,0.55)');
+        grad.addColorStop(1, 'rgba(255,0,0,0.75)');
+        this.ctx.strokeStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.moveTo(p1.x, p1.y);
+        this.ctx.lineTo(p2.x, p2.y);
+        this.ctx.stroke();
+      }
+    }
+    this.ctx.restore();
   }
   
-  checkCollisionWithTrail(tab) {
-    for (const point of this.trail) {
-      const dx = point.x - (tab.x + tab.width/2);
-      const dy = point.y - (tab.y + tab.height/2);
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      if (distance < 30) {
-        return true;
+  computePathLength(points) {
+    let len = 0;
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1];
+      const b = points[i];
+      len += Math.hypot(b.x - a.x, b.y - a.y);
+    }
+    return len;
+  }
+
+  sliceTabsWithPath(points) {
+    const toRemove = [];
+    for (let i = this.tabs.length - 1; i >= 0; i--) {
+      const tab = this.tabs[i];
+      const cx = tab.x + tab.width / 2;
+      const cy = tab.y + tab.height / 2;
+      const radius = Math.max(tab.width, tab.height) * 0.55;
+      let hit = false;
+      for (let j = 1; j < points.length; j++) {
+        const p1 = points[j - 1];
+        const p2 = points[j];
+        if (this.distancePointToSegment(cx, cy, p1.x, p1.y, p2.x, p2.y) <= radius) { hit = true; break; }
+      }
+      if (hit) {
+        if (tab.isBomb) { this.gameOver(); return; }
+        this.createParticles(tab);
+        toRemove.push(i);
+        this.score++;
       }
     }
-    return false;
+    for (const idx of toRemove) { this.tabs.splice(idx, 1); }
+  }
+
+  distancePointToSegment(px, py, x1, y1, x2, y2) {
+    const vx = x2 - x1;
+    const vy = y2 - y1;
+    const wx = px - x1;
+    const wy = py - y1;
+    const c1 = vx * wx + vy * wy;
+    if (c1 <= 0) return Math.hypot(px - x1, py - y1);
+    const c2 = vx * vx + vy * vy;
+    if (c2 <= c1) return Math.hypot(px - x2, py - y2);
+    const b = c1 / c2;
+    const bx = x1 + b * vx;
+    const by = y1 + b * vy;
+    return Math.hypot(px - bx, py - by);
   }
   
   createParticles(tab) {

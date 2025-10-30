@@ -1055,6 +1055,20 @@
       gap: 8px;
       pointer-events: auto;
     }
+    .game-ui button {
+      min-width: auto;
+      padding: 8px 12px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      box-shadow: 0 3px 0 #1a202c, 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    #gamePauseBtn.secondary {
+      background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+      border: 3px solid #4a5568;
+      color: #ffffff;
+    }
     
     .game-score,
     .game-missed {
@@ -1085,6 +1099,12 @@
       z-index: 100;
       color: white;
     }
+    .game-over-screen .dialog-actions,
+    .game-over-screen .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
     
     .game-over-screen h2 {
       font-size: 36px;
@@ -1110,6 +1130,32 @@
       pointer-events: none;
       z-index: 50;
     }
+
+    /* Floating Game Button */
+    #dashboardView { position: relative; }
+    .game-fab {
+      position: absolute;
+      right: 16px;
+      bottom: 84px; /* sits above footer action bar */
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      z-index: 20;
+      border: 3px solid #2d3748;
+      background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+      color: #ffffff;
+      box-shadow: 0 6px 0 #1a202c, 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    .game-fab:hover {
+      transform: translateY(-1px) scale(1.03);
+      box-shadow: 0 7px 0 #0d1117, 0 10px 20px rgba(0, 0, 0, 0.25);
+      background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+    }
+    .game-fab span { font-size: 18px; line-height: 1; }
   </style>
 </head>
 <body>
@@ -1124,7 +1170,6 @@
   <div class="nav-tabs">
     <button class="nav-tab active" data-view="dashboard">Dashboard</button>
     <button class="nav-tab" data-view="sessions">Sessions</button>
-    <button class="nav-tab" data-view="game">🎮 Game</button>
   </div>
 
   <div id="dashboardView" class="tab-view active">
@@ -1158,37 +1203,14 @@
           <div>Loading tabs...</div>
         </div>
       </div>
+      <!-- Floating Game Button -->
+      <button id="gameFabBtn" class="game-fab" title="Play Game"><span>🎮</span></button>
     </div>
     
     <div class="action-bar">
       <button id="organizeBtn" class="primary"><span>Organize</span></button>
       <button id="groupSelectedBtn" class="secondary" disabled><span>Group</span></button>
       <button id="ungroupBtn"><span>Ungroup</span></button>
-    </div>
-  </div>
-
-  <div id="sessionsView" class="tab-view">
-    <div class="tabs-container">
-      <div class="search-wrapper">
-        <span class="search-icon"></span>
-        <input type="text" id="searchBarSessions" class="search-bar" placeholder="Search sessions...">
-      </div>
-
-  <div id="gameView" class="tab-view">
-    <div id="gameContainer" class="game-container">
-      <canvas id="gameCanvas"></canvas>
-      <div id="gameUI" class="game-ui">
-        <div class="game-score">Score: <span id="scoreValue">0</span></div>
-        <div class="game-missed">Missed: <span id="missedValue">0</span></div>
-        <button id="gameStartBtn" class="primary game-start-btn"><span>Start Game</span></button>
-        <button id="gamePauseBtn" class="secondary" style="display: none;"><span>Pause</span></button>
-      </div>
-      <div id="gameOverScreen" class="game-over-screen" style="display: none;">
-        <h2>Game Over!</h2>
-        <div class="final-score">Final Score: <span id="finalScore">0</span></div>
-        <button id="gameRestartBtn" class="primary"><span>Play Again</span></button>
-        <button id="gameQuitBtn" class="secondary"><span>Quit</span></button>
-      </div>
     </div>
   </div>
 
@@ -1231,6 +1253,24 @@
     
     <div class="action-bar">
       <button id="refreshBtn"><span>Refresh</span></button>
+    </div>
+  </div>
+
+  <div id="gameView" class="tab-view">
+    <div id="gameContainer" class="game-container">
+      <canvas id="gameCanvas"></canvas>
+      <div id="gameUI" class="game-ui">
+        <div class="game-score">Score: <span id="scoreValue">0</span></div>
+        <div class="game-missed">Missed: <span id="missedValue">0</span></div>
+        <button id="gameStartBtn" class="primary game-start-btn"><span>Start Game</span></button>
+        <button id="gamePauseBtn" class="secondary" style="display: none;"><span>Pause</span></button>
+      </div>
+      <div id="gameOverScreen" class="game-over-screen" style="display: none;">
+        <h2>Game Over!</h2>
+        <div class="final-score">Final Score: <span id="finalScore">0</span></div>
+        <button id="gameRestartBtn" class="primary"><span>Play Again</span></button>
+        <button id="gameQuitBtn" class="secondary"><span>Quit</span></button>
+      </div>
     </div>
   </div>
 
