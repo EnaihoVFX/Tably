@@ -12,19 +12,6 @@ A Chrome extension that uses AI to automatically organize tabs, save browsing se
 ## Solution
 <img width="1407" height="496" alt="Screenshot 2025-10-30 at 14 50 23" src="https://github.com/user-attachments/assets/3d115139-4cba-4e97-94f8-35ce86064701" />
 
-<img width="420" height="597" alt="Screenshot 2025-10-30 at 14 54 12" src="https://github.com/user-attachments/assets/203253aa-3ca5-40bd-bd60-a8e3573cf617" />
-
-<img width="1915" height="1191" alt="Screenshot 2025-10-30 at 14 51 56" src="https://github.com/user-attachments/assets/8691ae86-4938-41cc-8043-464180eef39c" />
-
-<img width="421" height="600" alt="Screenshot 2025-10-30 at 14 54 34" src="https://github.com/user-attachments/assets/6db2ee3e-53bb-4eda-960a-8b17600e6dc2" />
-
-<img width="423" height="599" alt="Screenshot 2025-10-30 at 14 53 08" src="https://github.com/user-attachments/assets/a51c0628-72c6-4e5c-a9e0-10997165913b" />
-
-<img width="422" height="599" alt="Screenshot 2025-10-30 at 14 53 36" src="https://github.com/user-attachments/assets/ab117bcc-89ae-42c0-b298-65e84e946a90" />
-
-<img width="421" height="599" alt="Screenshot 2025-10-30 at 14 53 55" src="https://github.com/user-attachments/assets/79d3cf29-1546-4d04-8634-60cfe9025bde" />
-
-
 Smart Tab Organizer uses Chrome's built-in AI models (Gemini Nano) to automatically:
 - Categorize tabs based on content analysis
 - Generate intelligent group names and descriptions
@@ -146,6 +133,21 @@ smart-tab-organizer/
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Screenshots
+
+<img width="420" height="597" alt="Screenshot 2025-10-30 at 14 54 12" src="https://github.com/user-attachments/assets/203253aa-3ca5-40bd-bd60-a8e3573cf617" />
+
+<img width="1915" height="1191" alt="Screenshot 2025-10-30 at 14 51 56" src="https://github.com/user-attachments/assets/8691ae86-4938-41cc-8043-464180eef39c" />
+
+<img width="421" height="600" alt="Screenshot 2025-10-30 at 14 54 34" src="https://github.com/user-attachments/assets/6db2ee3e-53bb-4eda-960a-8b17600e6dc2" />
+
+<img width="423" height="599" alt="Screenshot 2025-10-30 at 14 53 08" src="https://github.com/user-attachments/assets/a51c0628-72c6-4e5c-a9e0-10997165913b" />
+
+<img width="422" height="599" alt="Screenshot 2025-10-30 at 14 53 36" src="https://github.com/user-attachments/assets/ab117bcc-89ae-42c0-b298-65e84e946a90" />
+
+<img width="421" height="599" alt="Screenshot 2025-10-30 at 14 53 55" src="https://github.com/user-attachments/assets/79d3cf29-1546-4d04-8634-60cfe9025bde" />
+
 
 ## Contributing
 
